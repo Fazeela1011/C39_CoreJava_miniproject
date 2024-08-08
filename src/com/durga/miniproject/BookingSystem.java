@@ -68,16 +68,40 @@ public class BookingSystem {
         int busId = scanner.nextInt();
         System.out.print("Enter passenger name: ");
         String passengerName = scanner.next();
-        System.out.print("Enter number of seats to book: ");
-        int seatsBooked = scanner.nextInt();
+        System.out.print("Enter seat number: ");
+        int seatNumber = scanner.nextInt();
 
-        String query = "INSERT INTO bookings (bus_id, passenger_name, seats_booked) VALUES (?, ?, ?)";
+        // Validate if the bus ID exists
+        String validateQuery = "SELECT COUNT(*) FROM buses WHERE bus_id = ?";
+        PreparedStatement validateStmt = connection.prepareStatement(validateQuery);
+        validateStmt.setInt(1, busId);
+        ResultSet rs = validateStmt.executeQuery();
+        rs.next();
+        if (rs.getInt(1) == 0) {
+            System.out.println("Bus ID does not exist. Please enter a valid Bus ID.");
+            return;
+        }
+
+        // Check if the seat number is already booked
+        String checkSeatQuery = "SELECT COUNT(*) FROM bookings WHERE bus_id = ? AND seat_number = ?";
+        PreparedStatement checkSeatStmt = connection.prepareStatement(checkSeatQuery);
+        checkSeatStmt.setInt(1, busId);
+        checkSeatStmt.setInt(2, seatNumber);
+        ResultSet seatRs = checkSeatStmt.executeQuery();
+        seatRs.next();
+        if (seatRs.getInt(1) > 0) {
+            System.out.println("Seat number " + seatNumber + " is already booked on bus ID " + busId + ". Please choose a different seat.");
+            return;
+        }
+
+        // Book the seat if bus ID is valid and seat number is not already booked
+        String query = "INSERT INTO bookings (bus_id, passenger_name, seat_number) VALUES (?, ?, ?)";
         PreparedStatement pstmt = connection.prepareStatement(query);
         pstmt.setInt(1, busId);
         pstmt.setString(2, passengerName);
-        pstmt.setInt(3, seatsBooked);
+        pstmt.setInt(3, seatNumber);
         pstmt.executeUpdate();
-        System.out.println("Seats booked successfully.");
+        System.out.println("Seat booked successfully.");
     }
 
     private static void viewBuses() throws SQLException {
